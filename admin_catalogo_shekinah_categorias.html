@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ADM Catálogo - Shekinah Auto Center</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{--black:#090909;--panel:#151515;--card:#1d1d1d;--yellow:#ffd700;--yellow-dark:#c9aa00;--line:#303030;--text:#f5f5f5;--muted:#b6b6b6;--danger:#ff5c5c;--success:#30d158}
+    body{font-family:Poppins,sans-serif;background:radial-gradient(circle at top left,rgba(255,215,0,.12),transparent 28%),linear-gradient(180deg,#050505,#0a0a0a);color:var(--text);min-height:100vh}
+    header{position:sticky;top:0;z-index:20;background:rgba(9,9,9,.94);backdrop-filter:blur(12px);border-bottom:2px solid var(--yellow);padding:1rem 1.2rem}
+    .topbar{max-width:1280px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:1rem}
+    .brand{display:flex;align-items:center;gap:.8rem}.brand img{height:54px;width:auto;display:block}.brand-text h1{font-size:1.15rem;line-height:1.1}.brand-text p{color:var(--muted);font-size:.85rem}
+    .top-actions{display:flex;gap:.7rem;flex-wrap:wrap;justify-content:flex-end}
+    a,button{font-family:inherit;-webkit-tap-highlight-color:transparent}
+    .btn{border:0;border-radius:999px;padding:.85rem 1.1rem;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:.45rem;text-decoration:none;transition:.25s;white-space:nowrap}
+    .btn-primary{background:var(--yellow);color:var(--black);border:2px solid var(--yellow)}.btn-primary:hover{background:var(--yellow-dark);border-color:var(--yellow-dark);transform:translateY(-2px)}
+    .btn-outline{background:transparent;color:var(--text);border:2px solid var(--yellow)}.btn-outline:hover{background:var(--yellow);color:var(--black);transform:translateY(-2px)}
+    .btn-danger{background:rgba(255,92,92,.12);color:var(--danger);border:1px solid rgba(255,92,92,.45)}.btn-danger:hover{background:var(--danger);color:white}
+    .btn-soft{background:var(--card);color:var(--text);border:1px solid var(--line)}.btn-soft:hover{border-color:var(--yellow);color:var(--yellow)}
+    main{max-width:1280px;margin:auto;padding:2rem 1.2rem 4rem}
+    .api-box{margin-bottom:1rem;display:flex;gap:.7rem;align-items:end}.api-box .form-group{margin:0;flex:1}
+    .dashboard{display:grid;grid-template-columns:420px 1fr;gap:1.5rem;align-items:start}
+    .left-stack{display:flex;flex-direction:column;gap:1.5rem}
+    .panel{background:rgba(21,21,21,.92);border:1px solid rgba(255,215,0,.22);border-radius:22px;padding:1.4rem;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+    .panel h2{font-size:1.25rem;margin-bottom:.35rem}.panel-sub{color:var(--muted);font-size:.9rem;margin-bottom:1.2rem}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}.form-group{margin-bottom:.9rem}.form-group.full{grid-column:1/-1}
+    label{display:block;font-size:.85rem;color:var(--muted);margin-bottom:.35rem;font-weight:600}
+    input,select,textarea{width:100%;border:1px solid var(--line);background:#090909;color:var(--text);border-radius:12px;padding:.85rem;outline:none;font-family:inherit;font-size:.92rem}
+    input:focus,select:focus,textarea:focus{border-color:var(--yellow);box-shadow:0 0 0 3px rgba(255,215,0,.08)}
+    textarea{min-height:105px;resize:vertical}.form-actions{display:flex;gap:.7rem;flex-wrap:wrap;margin-top:.5rem}
+    .toolbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1rem;flex-wrap:wrap}.search-row{display:flex;gap:.7rem;flex:1;min-width:260px}.search-row input{min-width:220px}
+    .status{margin:0 0 1rem;padding:.85rem 1rem;border-radius:14px;display:none;font-size:.9rem;border:1px solid var(--line)}.status.show{display:block}.status.success{color:#b9ffd0;background:rgba(48,209,88,.1);border-color:rgba(48,209,88,.38)}.status.error{color:#ffd1d1;background:rgba(255,92,92,.1);border-color:rgba(255,92,92,.38)}.status.info{color:#fff3ad;background:rgba(255,215,0,.1);border-color:rgba(255,215,0,.28)}
+    .category-manager{display:flex;gap:.6rem;margin-bottom:1rem}.category-manager input{flex:1}
+    .category-list{display:flex;flex-wrap:wrap;gap:.55rem}
+    .category-pill{display:inline-flex;align-items:center;gap:.5rem;background:#0d0d0d;border:1px solid var(--line);color:var(--text);border-radius:999px;padding:.45rem .55rem .45rem .8rem;font-size:.82rem}
+    .category-pill button{width:24px;height:24px;border-radius:50%;border:0;background:rgba(255,92,92,.15);color:var(--danger);cursor:pointer}
+    .category-pill.locked button{display:none}
+    .products-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}
+    .product-card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:1rem;display:flex;flex-direction:column;gap:.75rem;min-height:220px;transition:.25s}.product-card:hover{transform:translateY(-3px);border-color:rgba(255,215,0,.6)}
+    .product-top{display:flex;align-items:flex-start;justify-content:space-between;gap:.7rem}.tag{display:inline-flex;align-items:center;border-radius:999px;padding:.25rem .65rem;background:var(--yellow);color:var(--black);font-size:.72rem;font-weight:900}.price{color:var(--yellow);font-weight:900;white-space:nowrap}
+    .product-card h3{font-size:1.05rem;line-height:1.3}.product-card p{color:var(--muted);font-size:.88rem;line-height:1.55}.chips{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:auto}.chip{border:1px solid var(--line);background:#0d0d0d;color:var(--muted);border-radius:999px;padding:.25rem .55rem;font-size:.72rem}
+    .card-actions{display:flex;gap:.5rem;margin-top:.4rem}.card-actions .btn{flex:1;padding:.65rem .7rem;border-radius:10px;font-size:.82rem}
+    .empty{grid-column:1/-1;text-align:center;padding:3rem 1rem;color:var(--muted);border:1px dashed var(--line);border-radius:18px;background:rgba(255,255,255,.02)}
+    .helper{margin-top:1.2rem;border-top:1px solid var(--line);padding-top:1rem;color:var(--muted);font-size:.86rem;line-height:1.6}.helper strong{color:var(--yellow)}
+    @media(max-width:1050px){.dashboard{grid-template-columns:1fr}.products-list{grid-template-columns:repeat(2,1fr)}}@media(max-width:680px){.topbar{align-items:flex-start;flex-direction:column}.top-actions{width:100%;justify-content:stretch}.top-actions .btn{flex:1}.products-list{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.search-row,.api-box,.category-manager{flex-direction:column;width:100%;align-items:stretch}.toolbar{align-items:stretch}.brand img{height:46px}.brand-text h1{font-size:1rem}}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <div class="brand">
+        <img src="https://i.im.ge/eGfADP/Design_sem_nome-t150.webp" alt="Logo Shekinah Auto Center">
+        <div class="brand-text"><h1>ADM Catálogo</h1><p>Produtos e categorias</p></div>
+      </div>
+      <div class="top-actions">
+        <a class="btn btn-outline" href="index.html"><i class="fa-solid fa-house"></i> Voltar ao site</a>
+        <button class="btn btn-primary" id="reloadBtn" type="button"><i class="fa-solid fa-rotate-right"></i> Atualizar</button>
+      </div>
+    </div>
+  </header>
+
+  
+
+    <div id="status" class="status"></div>
+
+    <div class="dashboard">
+      <div class="left-stack">
+        <section class="panel">
+          <h2>Categorias</h2>
+          <p class="panel-sub">Crie categorias para organizar o catálogo. Elas aparecem no formulário e nos filtros.</p>
+          <div class="category-manager">
+            <input id="newCategory" placeholder="Ex: Suspensão, Freios, Promoções">
+            <button class="btn btn-primary" type="button" id="addCategoryBtn"><i class="fa-solid fa-plus"></i> Criar</button>
+          </div>
+          <div class="category-list" id="categoryList"></div>
+          <div class="helper">
+            <p><strong>Observação:</strong> as categorias ficam salvas no navegador deste computador. Se quiser salvar no banco/API também, o backend precisa ter rota de categorias.</p>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2 id="formTitle">Adicionar produto</h2>
+          <p class="panel-sub">Cadastre pneus, peças, acessórios ou serviços que aparecem no catálogo.</p>
+
+          <form id="productForm">
+            <input type="hidden" id="productId">
+            <div class="form-grid">
+              <div class="form-group full"><label for="title">Nome do produto/serviço *</label><input id="title" placeholder="Ex: Pneu 175/70 R14" required></div>
+              <div class="form-group"><label for="category">Categoria *</label><select id="category" required></select></div>
+              <div class="form-group"><label for="price">Preço</label><input id="price" type="number" min="0" step="0.01" placeholder="Ex: 299.90"></div>
+              <div class="form-group full"><label for="description">Descrição</label><textarea id="description" placeholder="Ex: Produto disponível para retirada na loja. Consulte marcas e condições."></textarea></div>
+              <div class="form-group"><label for="brand">Marca</label><input id="brand" placeholder="Ex: Pirelli, Goodyear"></div>
+              <div class="form-group"><label for="size">Medida/Aro</label><input id="size" placeholder="Ex: 175/70 R14, aro 15"></div>
+              <div class="form-group full"><label for="tags">Tags</label><input id="tags" placeholder="Ex: aro 14, promoção, custo-benefício"></div>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-primary" type="submit" id="submitBtn"><i class="fa-solid fa-plus"></i> Cadastrar</button>
+              <button class="btn btn-soft" type="button" id="clearBtn"><i class="fa-solid fa-broom"></i> Limpar</button>
+            </div>
+          </form>
+        </section>
+      </div>
+
+      <section class="panel">
+        <div class="toolbar">
+          <div><h2>Produtos cadastrados</h2><p class="panel-sub" id="countText">Carregando catálogo...</p></div>
+          <div class="search-row">
+            <input id="searchInput" placeholder="Buscar por nome, categoria ou tag...">
+            <select id="filterCategory"></select>
+          </div>
+        </div>
+        <div class="products-list" id="productsList"><div class="empty"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><p>Carregando produtos...</p></div></div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "shekinah_admin_api_url";
+    const CATEGORY_KEY = "shekinah_catalog_categories";
+    const DEFAULT_API_URL = "https://shekinah-api-nova.vercel.app/api";
+    const DEFAULT_CATEGORIES = ["Pneus","Serviço","Peças","Acessórios","Óleo","Bateria","Produto"];
+
+    let API_URL = localStorage.getItem(STORAGE_KEY) || DEFAULT_API_URL;
+    let categories = JSON.parse(localStorage.getItem(CATEGORY_KEY) || "null") || DEFAULT_CATEGORIES;
+    let products = [];
+
+    const el = id => document.getElementById(id);
+
+    function saveCategories(){ localStorage.setItem(CATEGORY_KEY, JSON.stringify(categories)); }
+    function showStatus(message,type="info"){ const box=el("status"); box.textContent=message; box.className=`status show ${type}`; clearTimeout(showStatus.timer); showStatus.timer=setTimeout(()=>box.className="status",4500); }
+    function formatBRL(value){ const n=Number(value); if(!Number.isFinite(n)||n<=0)return"Consultar"; return n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"}); }
+    function escapeHtml(value){ return String(value??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;"); }
+    function normalizeProducts(payload){ if(Array.isArray(payload))return payload; if(Array.isArray(payload?.products))return payload.products; if(Array.isArray(payload?.produtos))return payload.produtos; if(Array.isArray(payload?.data))return payload.data; return []; }
+    function getProductId(p){ return p.id ?? p._id ?? p.uuid ?? p.codigo; }
+    function getProductTitle(p){ return p.title || p.nome || p.name || ""; }
+    function getProductCategory(p){ return p.category || p.categoria || "Produto"; }
+    function getProductDescription(p){ return p.description || p.descricao || ""; }
+    function getProductPrice(p){ return p.price ?? p.preco ?? p.valor ?? 0; }
+    function getProductTags(p){ if(Array.isArray(p.tags))return p.tags; const raw=p.tags||p.tag||""; if(typeof raw==="string")return raw.split(",").map(t=>t.trim()).filter(Boolean); return [p.marca,p.aro,p.medida].filter(Boolean); }
+
+    function syncCategoriesFromProducts(){
+      products.forEach(product=>{
+        const category=getProductCategory(product);
+        if(category && !categories.includes(category)) categories.push(category);
+      });
+      saveCategories();
+      renderCategories();
+    }
+
+    function renderCategories(){
+      const categorySelect=el("category");
+      const filterSelect=el("filterCategory");
+      categorySelect.innerHTML=categories.map(cat=>`<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`).join("");
+      filterSelect.innerHTML=`<option value="">Todas</option>`+categories.map(cat=>`<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`).join("");
+
+      el("categoryList").innerHTML=categories.map(cat=>{
+        const locked=DEFAULT_CATEGORIES.includes(cat);
+        return `<span class="category-pill ${locked ? "locked" : ""}">${escapeHtml(cat)}<button type="button" title="Excluir categoria" onclick="deleteCategory('${escapeHtml(cat)}')"><i class="fa-solid fa-xmark"></i></button></span>`;
+      }).join("");
+    }
+
+    function addCategory(){
+      const input=el("newCategory");
+      const name=input.value.trim();
+      if(!name){ showStatus("Digite o nome da categoria.", "error"); return; }
+      const exists=categories.some(cat=>cat.toLowerCase()===name.toLowerCase());
+      if(exists){ showStatus("Essa categoria já existe.", "info"); return; }
+      categories.push(name);
+      categories.sort((a,b)=>a.localeCompare(b,"pt-BR"));
+      saveCategories();
+      renderCategories();
+      input.value="";
+      el("category").value=name;
+      showStatus("Categoria criada com sucesso.", "success");
+    }
+
+    function deleteCategory(category){
+      const used=products.some(product=>getProductCategory(product)===category);
+      if(used){ showStatus("Essa categoria está sendo usada em produtos. Troque a categoria dos produtos antes de excluir.", "error"); return; }
+      if(DEFAULT_CATEGORIES.includes(category)){ showStatus("Essa categoria padrão não pode ser excluída.", "info"); return; }
+      if(!confirm(`Excluir a categoria "${category}"?`)) return;
+      categories=categories.filter(cat=>cat!==category);
+      saveCategories();
+      renderCategories();
+      renderProducts();
+      showStatus("Categoria excluída.", "success");
+    }
+
+    function buildPayload(){
+      const tags=el("tags").value.split(",").map(t=>t.trim()).filter(Boolean);
+      const brand=el("brand").value.trim();
+      const size=el("size").value.trim();
+      if(brand)tags.push(brand);
+      if(size)tags.push(size);
+      return {
+        title:el("title").value.trim(), name:el("title").value.trim(), nome:el("title").value.trim(),
+        category:el("category").value, categoria:el("category").value,
+        price:Number(el("price").value||0), preco:Number(el("price").value||0),
+        description:el("description").value.trim(), descricao:el("description").value.trim(),
+        brand, marca:brand, size, medida:size, tags
+      };
+    }
+
+    async function loadProducts(){
+      el("productsList").innerHTML=`<div class="empty"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><p>Carregando produtos...</p></div>`;
+      try{
+        const response=await axios.get(`${API_URL}/produtos`,{timeout:10000});
+        products=normalizeProducts(response.data);
+        syncCategoriesFromProducts();
+        renderProducts();
+        showStatus("Catálogo carregado com sucesso.","success");
+      }catch(error){
+        console.error(error);
+        products=[];
+        renderProducts();
+        showStatus("Não consegui carregar a API. Verifique se o backend está online e se a URL está correta.","error");
+      }
+    }
+
+    async function saveProduct(event){
+      event.preventDefault();
+      const id=el("productId").value;
+      const payload=buildPayload();
+      if(!payload.title){ showStatus("Informe o nome do produto.","error"); return; }
+      const btn=el("submitBtn");
+      btn.disabled=true; btn.innerHTML=`<i class="fa-solid fa-spinner fa-spin"></i> Salvando...`;
+      try{
+        if(id){ await axios.put(`${API_URL}/produtos/${encodeURIComponent(id)}`,payload,{timeout:10000}); showStatus("Produto atualizado com sucesso.","success"); }
+        else{ await axios.post(`${API_URL}/produtos`,payload,{timeout:10000}); showStatus("Produto cadastrado com sucesso.","success"); }
+        clearForm(); await loadProducts();
+      }catch(error){
+        console.error(error);
+        showStatus("Erro ao salvar. Confira se sua API aceita POST/PUT em /produtos.","error");
+      }finally{
+        btn.disabled=false; btn.innerHTML=el("productId").value ? `<i class="fa-solid fa-floppy-disk"></i> Salvar edição` : `<i class="fa-solid fa-plus"></i> Cadastrar`;
+      }
+    }
+
+    function editProduct(index){
+      const p=products[index];
+      el("productId").value=getProductId(p)??"";
+      el("title").value=getProductTitle(p);
+      el("category").value=getProductCategory(p);
+      el("price").value=Number(getProductPrice(p))||"";
+      el("description").value=getProductDescription(p);
+      el("brand").value=p.brand||p.marca||"";
+      el("size").value=p.size||p.medida||p.aro||"";
+      el("tags").value=getProductTags(p).join(", ");
+      el("formTitle").textContent="Editar produto";
+      el("submitBtn").innerHTML=`<i class="fa-solid fa-floppy-disk"></i> Salvar edição`;
+      window.scrollTo({top:0,behavior:"smooth"});
+      showStatus("Produto carregado para edição.","info");
+    }
+
+    async function deleteProduct(index){
+      const p=products[index]; const id=getProductId(p); const title=getProductTitle(p)||"produto";
+      if(!id){ showStatus("Não encontrei o ID desse produto para excluir.","error"); return; }
+      if(!confirm(`Tem certeza que deseja excluir "${title}"?`)) return;
+      try{ await axios.delete(`${API_URL}/produtos/${encodeURIComponent(id)}`,{timeout:10000}); showStatus("Produto excluído com sucesso.","success"); await loadProducts(); }
+      catch(error){ console.error(error); showStatus("Erro ao excluir. Confira se sua API aceita DELETE em /produtos/:id.","error"); }
+    }
+
+    function clearForm(){
+      el("productForm").reset(); el("productId").value="";
+      el("category").value=categories[0]||"Produto";
+      el("formTitle").textContent="Adicionar produto";
+      el("submitBtn").innerHTML=`<i class="fa-solid fa-plus"></i> Cadastrar`;
+    }
+
+    function renderProducts(){
+      const search=el("searchInput").value.toLowerCase().trim();
+      const category=el("filterCategory").value;
+      const filtered=products.filter(p=>{
+        const title=getProductTitle(p).toLowerCase();
+        const cat=getProductCategory(p);
+        const desc=getProductDescription(p).toLowerCase();
+        const tags=getProductTags(p).join(" ").toLowerCase();
+        return (!search || [title,cat.toLowerCase(),desc,tags].some(text=>text.includes(search))) && (!category || cat===category);
+      });
+      el("countText").textContent=`${filtered.length} item(ns) exibido(s) de ${products.length} cadastrado(s).`;
+      if(!filtered.length){ el("productsList").innerHTML=`<div class="empty"><i class="fa-solid fa-box-open fa-2x"></i><p>Nenhum produto encontrado.</p></div>`; return; }
+      el("productsList").innerHTML=filtered.map(p=>{
+        const originalIndex=products.indexOf(p);
+        const tags=getProductTags(p).slice(0,5);
+        return `<article class="product-card">
+          <div class="product-top"><span class="tag">${escapeHtml(getProductCategory(p))}</span><span class="price">${formatBRL(getProductPrice(p))}</span></div>
+          <h3>${escapeHtml(getProductTitle(p)||"Produto sem nome")}</h3>
+          <p>${escapeHtml(getProductDescription(p)||"Sem descrição cadastrada.")}</p>
+          <div class="chips">${tags.map(tag=>`<span class="chip">${escapeHtml(tag)}</span>`).join("")}</div>
+          <div class="card-actions">
+            <button class="btn btn-soft" type="button" onclick="editProduct(${originalIndex})"><i class="fa-solid fa-pen"></i> Editar</button>
+            <button class="btn btn-danger" type="button" onclick="deleteProduct(${originalIndex})"><i class="fa-solid fa-trash"></i> Excluir</button>
+          </div>
+        </article>`;
+      }).join("");
+    }
+
+    function setupApiUrl(){
+      el("apiUrl").value=API_URL;
+      el("saveApiBtn").addEventListener("click",()=>{
+        API_URL=el("apiUrl").value.replace(/\/$/,"");
+        localStorage.setItem(STORAGE_KEY,API_URL);
+        showStatus("URL da API salva no navegador.","success");
+        loadProducts();
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded",()=>{
+      renderCategories();
+      setupApiUrl();
+      el("addCategoryBtn").addEventListener("click",addCategory);
+      el("newCategory").addEventListener("keydown",event=>{ if(event.key==="Enter"){ event.preventDefault(); addCategory(); }});
+      el("productForm").addEventListener("submit",saveProduct);
+      el("clearBtn").addEventListener("click",clearForm);
+      el("reloadBtn").addEventListener("click",loadProducts);
+      el("searchInput").addEventListener("input",renderProducts);
+      el("filterCategory").addEventListener("change",renderProducts);
+      loadProducts();
+    });
+  </script>
+</body>
+</html>
