@@ -2,9 +2,11 @@
   "name": "shekinah-api",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "api/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node api/index.js",
+    "test": "node --test test/*.test.js",
+    "migrate": "node scripts/migrate.js"
   },
   "keywords": [],
   "author": "",
@@ -14,6 +16,15 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "pg": "^8.20.0"
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.20.0",
+    "sharp": "^0.35.4"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "supertest": "^7.2.2"
   }
 }
