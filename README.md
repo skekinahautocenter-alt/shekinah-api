@@ -8,7 +8,7 @@ Instale com `pnpm install --frozen-lockfile`. Use Node.js 22 ou 24 e as variáve
 
 - `DATABASE_URL`: conexão PostgreSQL com pooling para a API.
 - `DATABASE_URL_UNPOOLED`: conexão direta para executar a migração; não precisa ser exposta ao frontend.
-- `ADMIN_PASSWORD`: senha inicial de 16 a 256 caracteres, usada somente para criar o primeiro hash em `admin_credentials`. Depois disso, a senha é alterada pelo ADM; editar esta variável não substitui a senha cadastrada.
+- `ADMIN_PASSWORD`: senha inicial não vazia, de até 256 caracteres, usada somente para criar o primeiro hash em `admin_credentials`. Depois disso, a senha é alterada pelo ADM; editar esta variável não substitui a senha cadastrada.
 - `ADMIN_SESSION_SECRET`: segredo aleatório independente de pelo menos 32 caracteres, usado para assinar sessões de até 8 horas.
 - `PORT`: opcional, 3000 em desenvolvimento.
 
@@ -49,6 +49,6 @@ A integração foi verificada no navegador com cópias locais do ADM e site apon
 
 ## Alterar a senha pelo painel
 
-No ADM, use **Alterar senha**, informe a senha atual e confirme a nova (16 a 256 caracteres). O banco guarda somente um hash scrypt com salt aleatório. A alteração incrementa a versão da credencial e invalida todas as sessões anteriores, inclusive em outras instâncias da API. A senha inicial da variável de ambiente não funciona como senha de recuperação após uma alteração. O endpoint `PUT /api/admin/password` exige Bearer e recebe `{currentPassword,newPassword,confirmPassword}`. Há limite de 10 tentativas por IP a cada 15 minutos.
+No ADM, use **Alterar senha**, informe a senha atual e confirme a nova (não vazia, com até 256 caracteres). O banco guarda somente um hash scrypt com salt aleatório. A alteração incrementa a versão da credencial e invalida todas as sessões anteriores, inclusive em outras instâncias da API. A senha inicial da variável de ambiente não funciona como senha de recuperação após uma alteração. O endpoint `PUT /api/admin/password` exige Bearer e recebe `{currentPassword,newPassword,confirmPassword}`. Há limite de 10 tentativas por IP a cada 15 minutos.
 
 Recuperação em caso de esquecimento exige um administrador autorizado do banco: gere um novo hash usando o mesmo formato scrypt de `lib/admin-auth.js` e atualize a linha incrementando `version`. Não apague a linha, pois isso reativaria a senha inicial do ambiente.
