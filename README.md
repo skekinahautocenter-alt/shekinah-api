@@ -37,7 +37,7 @@ Configure as variáveis no servidor/hosting. Nunca coloque valores reais em HTML
 | `GET /api/produtos[/id]` | Público | Mantém as leituras do catálogo. |
 | `POST/PUT/DELETE /api/produtos[/id]` | Bearer | Edição autenticada pelo mesmo token do painel. |
 
-`imageData` é uma data URL base64 PNG, JPEG ou WebP. A API limita o arquivo a 2 MB, valida conteúdo e dimensões exatas de 1080 × 1080 e rejeita imagens animadas, SVGs, corrupção e tipo declarado incompatível. O servidor decodifica e reencoda a imagem em WebP, sem metadados. `altText` é obrigatório, com até 180 caracteres.
+`imageData` é uma data URL base64 PNG, JPEG ou WebP. A API limita o arquivo a 2 MB, valida conteúdo e dimensões exatas de 1080 × 1350 e rejeita imagens animadas, SVGs, corrupção e tipo declarado incompatível. O servidor decodifica e reencoda a imagem em WebP, sem metadados. `altText` é obrigatório, com até 180 caracteres.
 
 Há limite compartilhado no banco de 10 tentativas de login por IP por janela de 15 minutos, inclusive em múltiplas instâncias. Sem segredos configurados, o acesso administrativo retorna 503 e permanece bloqueado. CORS permite o site e o painel em origens distintas; a permissão de escrita depende sempre do Bearer token.
 

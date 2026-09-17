@@ -20,21 +20,23 @@ async function fixture(t) {
   } };
   const migration = fs.readFileSync(path.join(__dirname, '../migrations/001_site_banner.sql'), 'utf8');
   await db.exec(migration);
+  await db.exec(fs.readFileSync(path.join(__dirname, '../migrations/003_banner_portrait.sql'), 'utf8'));
   await db.exec(fs.readFileSync(path.join(__dirname, '../migrations/002_admin_credentials.sql'), 'utf8'));
   await db.exec(migration);
+  await db.exec(fs.readFileSync(path.join(__dirname, '../migrations/003_banner_portrait.sql'), 'utf8'));
   await db.exec(fs.readFileSync(path.join(__dirname, '../migrations/002_admin_credentials.sql'), 'utf8'));
   await pool.query(`CREATE TABLE produtos (id SERIAL PRIMARY KEY, title TEXT, name TEXT, nome TEXT, category TEXT, categoria TEXT, price NUMERIC, preco NUMERIC, description TEXT, descricao TEXT, brand TEXT, marca TEXT, size TEXT, medida TEXT, aro TEXT, tags TEXT[], updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP)`);
   const app = createApp({ pool, adminPassword: password, sessionSecret: secret });
   const login = await request(app).post('/api/admin/login').send({ password }).expect(200);
   return { app, pool, token: login.body.token };
 }
-async function picture(size = 1080, color = '#ffd700', type = 'png') {
-  const buffer = await sharp({ create: { width: size, height: size, channels: 3, background: color } })[type]().toBuffer();
+async function picture(size = 1080, color = '#ffd700', type = 'png', height = Math.round(size * 1.25)) {
+  const buffer = await sharp({ create: { width: size, height, channels: 3, background: color } })[type]().toBuffer();
   return `data:image/${type};base64,${buffer.toString('base64')}`;
 }
 function auth(r, token) { return r.set('Authorization', `Bearer ${token}`); }
 
-test('upload persists across API instances, public image decodes at 1080x1080 and replacement invalidates cache', async (t) => {
+test('upload persists across API instances, public image decodes at 1080x1350 and replacement invalidates cache', async (t) => {
   const { app, pool, token } = await fixture(t);
   assert.equal((await request(app).get('/api/banner').expect(200)).body.banner, null);
   await request(app).get('/api/banner/image').expect(404);
@@ -43,9 +45,10 @@ test('upload persists across API instances, public image decodes at 1080x1080 an
   const metadata = await request(secondApp).get('/api/banner').expect(200);
   assert.equal(metadata.headers['cache-control'], 'no-store');
   assert.equal(metadata.body.banner.altText, 'Campanha de pneus');
+  assert.equal(metadata.body.banner.height, 1350);
   const image = await request(secondApp).get(metadata.body.banner.imageUrl).expect(200).expect('Content-Type', /image\/webp/);
   const info = await sharp(image.body).metadata();
-  assert.equal(info.width, 1080); assert.equal(info.height, 1080);
+  assert.equal(info.width, 1080); assert.equal(info.height, 1350);
   assert.equal(image.headers['x-content-type-options'], 'nosniff');
   await request(secondApp).get(metadata.body.banner.imageUrl).set('If-None-Match', image.headers.etag).expect(304);
   const changed = await auth(request(app).put('/api/banner'), token).send({ imageData: await picture(1080, '#003344', 'jpeg'), altText: 'Nova arte' }).expect(200);
@@ -71,6 +74,7 @@ test('server verifies format, pixels, payload size and alt text without losing t
   await auth(request(app).put('/api/banner'),token).send(good).expect(200);
   const invalids = [
     {...good,imageData:await picture(800)},
+    {...good,imageData:await picture(1080,'#ffd700','png',1080)},
     {...good,imageData:'data:image/svg+xml;base64,'+Buffer.from('<svg/>').toString('base64')},
     {...good,imageData:'data:image/png;base64,'+Buffer.from('not an image').toString('base64')},
     {...good,imageData:good.imageData.replace('image/png','image/jpeg')},
