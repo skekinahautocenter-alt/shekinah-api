@@ -126,13 +126,14 @@ test('API errors return safe messages and CORS allows the separate admin origin'
 
 test('password change persists across instances, validates inputs and revokes existing sessions', async t => {
   const {app,pool,token}=await fixture(t);
-  const fresh='new-test-password-long-123';
+  const fresh='x';
   const body={currentPassword:password,newPassword:fresh,confirmPassword:fresh};
   await request(app).put('/api/admin/password').send(body).expect(401);
   await auth(request(app).put('/api/admin/password'),token).send({...body,currentPassword:'incorrect'}).expect(400);
   await auth(request(app).put('/api/admin/password'),token).send({...body,confirmPassword:'mismatch'}).expect(400);
-  await auth(request(app).put('/api/admin/password'),token).send({...body,newPassword:'short',confirmPassword:'short'}).expect(400);
+  await auth(request(app).put('/api/admin/password'),token).send({...body,newPassword:'',confirmPassword:''}).expect(400);
   await auth(request(app).put('/api/admin/password'),token).send({...body,newPassword:password,confirmPassword:password}).expect(400);
+  await auth(request(app).put('/api/admin/password'),token).send({...body,newPassword:'   ',confirmPassword:'   '}).expect(400);
   await auth(request(app).put('/api/admin/password'),token).send(body).expect(200);
   await auth(request(app).get('/api/admin/session'),token).expect(401);
   await auth(request(app).delete('/api/banner'),token).expect(401);
