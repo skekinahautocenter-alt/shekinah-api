@@ -20,7 +20,9 @@ async function fixture(t) {
   } };
   const migration = fs.readFileSync(path.join(__dirname, '../migrations/001_site_banner.sql'), 'utf8');
   await db.exec(migration);
+  await db.exec(fs.readFileSync(path.join(__dirname, '../migrations/002_admin_credentials.sql'), 'utf8'));
   await db.exec(migration);
+  await db.exec(fs.readFileSync(path.join(__dirname, '../migrations/002_admin_credentials.sql'), 'utf8'));
   await pool.query(`CREATE TABLE produtos (id SERIAL PRIMARY KEY, title TEXT, name TEXT, nome TEXT, category TEXT, categoria TEXT, price NUMERIC, preco NUMERIC, description TEXT, descricao TEXT, brand TEXT, marca TEXT, size TEXT, medida TEXT, aro TEXT, tags TEXT[], updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP)`);
   const app = createApp({ pool, adminPassword: password, sessionSecret: secret });
   const login = await request(app).post('/api/admin/login').send({ password }).expect(200);
@@ -120,4 +122,31 @@ test('API errors return safe messages and CORS allows the separate admin origin'
   const preflight=await request(app).options('/api/banner').set('Origin','https://admin.example.com').set('Access-Control-Request-Method','PUT').set('Access-Control-Request-Headers','authorization,content-type').expect(204);
   assert.equal(preflight.headers['access-control-allow-origin'],'*');
   assert.match(preflight.headers['access-control-allow-headers'],/Authorization/);
+});
+
+test('password change persists across instances, validates inputs and revokes existing sessions', async t => {
+  const {app,pool,token}=await fixture(t);
+  const fresh='new-test-password-long-123';
+  const body={currentPassword:password,newPassword:fresh,confirmPassword:fresh};
+  await request(app).put('/api/admin/password').send(body).expect(401);
+  await auth(request(app).put('/api/admin/password'),token).send({...body,currentPassword:'incorrect'}).expect(400);
+  await auth(request(app).put('/api/admin/password'),token).send({...body,confirmPassword:'mismatch'}).expect(400);
+  await auth(request(app).put('/api/admin/password'),token).send({...body,newPassword:'short',confirmPassword:'short'}).expect(400);
+  await auth(request(app).put('/api/admin/password'),token).send({...body,newPassword:password,confirmPassword:password}).expect(400);
+  await auth(request(app).put('/api/admin/password'),token).send(body).expect(200);
+  await auth(request(app).get('/api/admin/session'),token).expect(401);
+  await auth(request(app).delete('/api/banner'),token).expect(401);
+  const restarted=createApp({pool,adminPassword:password,sessionSecret:secret});
+  await request(restarted).post('/api/admin/login').send({password}).expect(401);
+  const session=await request(restarted).post('/api/admin/login').send({password:fresh}).expect(200);
+  await auth(request(restarted).get('/api/admin/session'),session.body.token).expect(200);
+  const stored=(await pool.query('SELECT password_hash FROM admin_credentials')).rows[0].password_hash;
+  assert(!stored.includes(fresh));assert(!stored.includes(password));
+});
+
+test('concurrent password updates cannot overwrite each other', async t => {
+  const {app,token}=await fixture(t);
+  const results=await Promise.all(['concurrent-password-one','concurrent-password-two'].map(newPassword=>auth(request(app).put('/api/admin/password'),token).send({currentPassword:password,newPassword,confirmPassword:newPassword})));
+  assert.equal(results.filter(r=>r.status===200).length,1);
+  assert(results.every(r=>[200,401,409].includes(r.status)));
 });
