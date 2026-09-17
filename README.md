@@ -1,4 +1,4 @@
-# API Auto Center Shekinah
+# API Centro Automotivo Shekinah
 
 API Express + PostgreSQL usada pelo site e pelo ADM. O banner é armazenado em uma única linha (`site_banner`, coluna BYTEA), sem depender do disco temporário da Vercel ou de outro serviço de upload.
 
@@ -8,7 +8,7 @@ Instale com `pnpm install --frozen-lockfile`. Use Node.js 22 ou 24 e as variáve
 
 - `DATABASE_URL`: conexão PostgreSQL com pooling para a API.
 - `DATABASE_URL_UNPOOLED`: conexão direta para executar a migração; não precisa ser exposta ao frontend.
-- `ADMIN_PASSWORD`: nova senha forte, com pelo menos 16 caracteres.
+- `ADMIN_PASSWORD`: senha inicial de 16 a 256 caracteres, usada somente para criar o primeiro hash em `admin_credentials`. Depois disso, a senha é alterada pelo ADM; editar esta variável não substitui a senha cadastrada.
 - `ADMIN_SESSION_SECRET`: segredo aleatório independente de pelo menos 32 caracteres, usado para assinar sessões de até 8 horas.
 - `PORT`: opcional, 3000 em desenvolvimento.
 
@@ -16,7 +16,7 @@ Configure as variáveis no servidor/hosting. Nunca coloque valores reais em HTML
 
 ## Migração e ordem de publicação
 
-1. Configure uma conexão de teste isolada e execute `pnpm migrate`. A migração versionada `migrations/001_site_banner.sql` cria apenas `site_banner` e `admin_login_limits`; é idempotente e não modifica a tabela de produtos.
+1. Configure uma conexão de teste isolada e execute `pnpm migrate`. As migrações versionadas criam `site_banner`, `admin_login_limits` e `admin_credentials`; são idempotentes e não modificam a tabela de produtos. Conceda ao papel da aplicação SELECT, INSERT e UPDATE em `admin_credentials`.
 2. Valide o teste com `pnpm test`. A suíte usa PostgreSQL local via PGlite e não acessa o Neon nem dados de produção.
 3. Na publicação, configure os segredos, execute a mesma migração com conexão direta autorizada e publique a API.
 4. Publique o ADM e o site correspondentes. **Coordene API e ADM:** a versão antiga do painel não envia token e deixará de conseguir editar produtos quando a API nova entrar no ar.
@@ -46,3 +46,9 @@ Há limite compartilhado no banco de 10 tentativas de login por IP por janela de
 A suíte cobre upload, substituição, remoção, leitura por outra instância, dimensões da imagem servida, cache/ETag, autenticação e expiração, formatos inválidos, limite de tamanho, descrição, limite de login, falhas do banco e CRUD do catálogo. Também corrige o INSERT preexistente de produtos, que tinha 16 placeholders para 15 colunas.
 
 A integração foi verificada no navegador com cópias locais do ADM e site apontadas à API isolada; o upload foi visto por uma segunda sessão. Nenhuma imagem ou produto de teste foi enviado ao ambiente publicado.
+
+## Alterar a senha pelo painel
+
+No ADM, use **Alterar senha**, informe a senha atual e confirme a nova (16 a 256 caracteres). O banco guarda somente um hash scrypt com salt aleatório. A alteração incrementa a versão da credencial e invalida todas as sessões anteriores, inclusive em outras instâncias da API. A senha inicial da variável de ambiente não funciona como senha de recuperação após uma alteração. O endpoint `PUT /api/admin/password` exige Bearer e recebe `{currentPassword,newPassword,confirmPassword}`. Há limite de 10 tentativas por IP a cada 15 minutos.
+
+Recuperação em caso de esquecimento exige um administrador autorizado do banco: gere um novo hash usando o mesmo formato scrypt de `lib/admin-auth.js` e atualize a linha incrementando `version`. Não apague a linha, pois isso reativaria a senha inicial do ambiente.
